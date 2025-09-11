@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/jhonnydsl/payment-API/src/repository"
+	"github.com/jhonnydsl/payment-API/src/utils/apperrors"
 	"github.com/joho/godotenv"
 )
 
@@ -26,23 +27,8 @@ func main() {
 
 	repo := &repository.TableRepository{}
 
-	err = repo.CreateTablePayments()
-	if err != nil {
-		log.Fatalf("error creating table payments: %v", err)
-	}
-
-	err = repo.CreateTableUsers()
-	if err != nil {
-		log.Fatalf("error creating table users: %v", err)
-	}
-
-	err = repo.CreateTablePaymentEvents()
-	if err != nil {
-		log.Fatalf("error creating table payment_events: %v", err)
-	}
-
-	err = repo.CreateTablePaymentMethods()
-	if err != nil {
-		log.Fatalf("error creating table payment_methods")
-	}
+	apperrors.CheckErr(repo.CreateTablePayments(), "error creating table payments") 
+	apperrors.CheckErr(repo.CreateTableUsers(), "error creating table users") 
+	apperrors.CheckErr(repo.CreateTablePaymentEvents(), "error creating table payment_events") 
+	apperrors.CheckErr(repo.CreateTablePaymentMethods(), "error creating table payment_methods") 
 }
