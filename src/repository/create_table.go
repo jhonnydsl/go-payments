@@ -9,7 +9,7 @@ func (r *TableRepository) CreateTablePayments() error {
 	user_id INT NOT NULL,
 	amount NUMERIC NOT NULL,
 	currency VARCHAR(3) NOT NULL,
-	payment_method VARCHAR(20),
+	payment_method_id INT REFERENCES payment_methods(id),
 	status VARCHAR(20) NOT NULL,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
