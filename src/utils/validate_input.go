@@ -17,6 +17,7 @@ func ValidatePaymentInput(payment dtos.PaymentInput) error {
 		return fmt.Errorf("currency is required")
 	}
 
+
 	if payment.PaymentMethodID == 0 {
 		return fmt.Errorf("payment method is required")
 	}

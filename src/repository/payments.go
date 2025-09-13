@@ -16,6 +16,7 @@ func (r *PaymentsRepository) CreatePayment(ctx context.Context, payment dtos.Pay
 	`
 	var createdPayment dtos.PaymentOutput
 
+
 	err := DB.QueryRowContext(ctx, query, userID, payment.Amount, payment.Currency, payment.PaymentMethodID).Scan(
 		&createdPayment.ID,
 		&createdPayment.UserID,
