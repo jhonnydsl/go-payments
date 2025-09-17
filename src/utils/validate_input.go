@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/mail"
+	"unicode/utf8"
 
 	"github.com/jhonnydsl/payment-API/src/dtos"
 )
@@ -17,9 +19,25 @@ func ValidatePaymentInput(payment dtos.PaymentInput) error {
 		return fmt.Errorf("currency is required")
 	}
 
-
 	if payment.PaymentMethodID == 0 {
 		return fmt.Errorf("payment method is required")
+	}
+
+	return nil
+}
+
+func ValidateUserInput(user dtos.UserInput) error {
+	if utf8.RuneCountInString(user.Name) < 3 {
+		return fmt.Errorf("name must be at least 3 characters long")
+	}
+
+	_, err := mail.ParseAddress(user.Email)
+	if err != nil {
+		return fmt.Errorf("invalid email format")
+	}
+
+	if utf8.RuneCountInString(user.Password) < 6 {
+		return fmt.Errorf("the password must be at least 6 characters long")
 	}
 
 	return nil
