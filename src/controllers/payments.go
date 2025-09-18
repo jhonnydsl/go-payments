@@ -6,6 +6,7 @@ import (
 	"github.com/jhonnydsl/payment-API/src/dtos"
 	"github.com/jhonnydsl/payment-API/src/services"
 	"github.com/jhonnydsl/payment-API/src/utils"
+	"github.com/jhonnydsl/payment-API/src/utils/middleware"
 )
 
 type PaymentController struct {
@@ -21,9 +22,14 @@ func (controller *PaymentController) CreatePayment(w http.ResponseWriter, r *htt
 	defer cancel()
 
 	var paymentInput dtos.PaymentInput
-	userID := 1		// <= Temporary userID for testing.
 
 	if !utils.DecodeJSON(w, r, &paymentInput) {
+		return
+	}
+
+	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
