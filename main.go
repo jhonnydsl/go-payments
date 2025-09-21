@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/jhonnydsl/payment-API/src/controllers"
 	"github.com/jhonnydsl/payment-API/src/repository"
 	"github.com/jhonnydsl/payment-API/src/routes"
@@ -40,8 +41,14 @@ func main() {
 	userService := &services.UserService{Repo: userRepo}
 	userController := &controllers.UserController{Service: userService}
 
-	routes.SetupRoutes(userController)
+	paymentRepo := &repository.PaymentsRepository{}
+	paymentService := &services.PaymentService{Repo: paymentRepo}
+	paymentController := &controllers.PaymentController{Service: paymentService}
+
+	r := chi.NewRouter()
+
+	routes.SetupRoutes(r, userController, paymentController)
 
 	log.Println("Server running on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", r))
 }

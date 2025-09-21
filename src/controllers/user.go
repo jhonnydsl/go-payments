@@ -34,3 +34,26 @@ func (controller *UserController) CreateUser(w http.ResponseWriter, r *http.Requ
 
 	utils.SendJSON(w, newUser, http.StatusCreated)
 }
+
+func (controller *UserController) LoginUser(w http.ResponseWriter, r *http.Request) {
+	if !utils.ValidateMethod(w, r, "POST") {
+		return
+	}
+
+	ctx, cancel := utils.NewDBContext()
+	defer cancel()
+	
+	var login dtos.UserLogin
+
+	if !utils.DecodeJSON(w, r, &login) {
+		return
+	}
+
+	token, err :=controller.Service.LoginUser(ctx, login)
+	if err != nil {
+		http.Error(w, "email or password invalid", http.StatusUnauthorized)
+		return
+	}
+
+	utils.SendJSON(w, map[string]string{"token": token}, http.StatusOK)
+}

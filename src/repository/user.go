@@ -31,3 +31,23 @@ func (r *UserRepository) CreateUser(ctx context.Context, user dtos.UserInput) (d
 
 	return createdUser, err
 }
+
+func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (dtos.User, string, error) {
+	query := `SELECT id, name, email, password, created_at FROM users WHERE email = $1`
+
+	var user dtos.User
+	var hashedPassword string
+
+	err := DB.QueryRow(query, email).Scan(
+		&user.ID,
+		&user.Name,
+		&user.Email,
+		&hashedPassword,
+		&user.CreatedAt,
+	)
+	if err != nil {
+		return dtos.User{}, "", err
+	}
+
+	return user, hashedPassword, nil
+}
