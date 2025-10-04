@@ -4,7 +4,7 @@ A personal project to develop a payment API using Go (Golang), JWT authenticatio
 
 ## Status
 
-🚧 Em desenvolvimento
+🚧 In Development
 
 ## Tecnologies
 
