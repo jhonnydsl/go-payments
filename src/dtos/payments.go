@@ -3,9 +3,9 @@ package dtos
 import "time"
 
 type PaymentInput struct {
-	Amount        float64 `json:"amount" binding:"required"`
-	Currency      string  `json:"currency" binding:"required"`
-	PaymentMethodID int  `json:"payment_method_id" binding:"required"`
+	Amount        float64 `json:"amount"`
+	Currency      string  `json:"currency"`
+	PaymentMethodID int  `json:"payment_method_id"`
 }
 
 type PaymentOutput struct {
@@ -17,4 +17,14 @@ type PaymentOutput struct {
 	Status        string  `json:"status"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt	  time.Time `json:"updated_at"`
+}
+
+type PSPPaymentRequest struct {
+	Amount int `json:"amount"`
+	Currency string `json:"currency"`
+}
+
+type PSPPaymentResponse struct {
+	ID string `json:"id"`
+	Status string `json:"status"`
 }

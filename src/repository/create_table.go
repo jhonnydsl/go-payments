@@ -11,6 +11,7 @@ func (r *TableRepository) CreateTablePayments() error {
 	currency VARCHAR(3) NOT NULL,
 	payment_method_id INT REFERENCES payment_methods(id),
 	status VARCHAR(20) NOT NULL,
+	psp_id VARCHAR(100),
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);`
