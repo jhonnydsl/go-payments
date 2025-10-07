@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,16 +11,17 @@ import (
 	"github.com/jhonnydsl/payment-API/src/dtos"
 )
 
-func CreateStripePayment(amount int, currency, paymentMethod string) (*dtos.PSPPaymentResponse, error) {
+func CreateStripePayment(ctx context.Context, amount int, currency, paymentMethod string) (*dtos.PSPPaymentResponse, error) {
 	secretKey := os.Getenv("STRIPE_SECRET_KEY")
 	url := "https://api.stripe.com/v1/payment_intents"
 
+	// Builds the data string in the format required by Stripe, inserting values dynamically
 	data := fmt.Sprintf(
 		"amount=%d&currency=%s&payment_method_types[]=%s",
 		amount, currency, paymentMethod,
 	)
 
-	req, err := http.NewRequest("POST", url, strings.NewReader(data))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(data))
 	if err != nil {
 		return nil, err
 	}
@@ -38,6 +40,6 @@ func CreateStripePayment(amount int, currency, paymentMethod string) (*dtos.PSPP
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
-	
+
 	return &result, nil
 }
