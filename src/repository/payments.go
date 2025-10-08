@@ -33,3 +33,30 @@ func (r *PaymentsRepository) CreatePayment(ctx context.Context, payment dtos.Pay
 
 	return createdPayment, nil
 }
+
+func (r *PaymentsRepository) UpdatePaymentWithPSP(ctx context.Context, paymentID int, pspID, status string) (dtos.PaymentOutput, error) {
+	query := `
+	UPDATE payments
+	SET psp_id = $1, status = $2, updated_at = CURRENT_TIMESTAMP
+	WHERE id = $3
+	RETURNING id, user_id, amount, currency, payment_method_id, status, created_at, updated_at;
+	`
+
+	var updatedPayment dtos.PaymentOutput
+
+	err := DB.QueryRowContext(ctx, query, pspID, status, paymentID).Scan(
+		&updatedPayment.ID,
+		&updatedPayment.UserID,
+		&updatedPayment.Amount,
+		&updatedPayment.Currency,
+		&updatedPayment.PaymentMethodID,
+		&updatedPayment.Status,
+		&updatedPayment.CreatedAt,
+		&updatedPayment.UpdatedAt,
+	)
+	if err != nil {
+		return dtos.PaymentOutput{}, err
+	}
+
+	return updatedPayment, nil
+}
