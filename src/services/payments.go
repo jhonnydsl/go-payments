@@ -17,5 +17,20 @@ func (service *PaymentService) CreatePayment(ctx context.Context, payment dtos.P
 		return dtos.PaymentOutput{}, err
 	}
 	
-	return service.Repo.CreatePayment(ctx, payment, userID)
+	createdPayment, err := service.Repo.CreatePayment(ctx, payment, userID)
+	if err != nil {
+		return dtos.PaymentOutput{}, err
+	}
+
+	pspResponse, err := utils.CreateStripePayment(ctx, int(payment.Amount*100), payment.Currency, "card")	// <= Just "card" for testing purposes.
+	if err != nil {
+		return dtos.PaymentOutput{}, err
+	}
+
+	updatedPayment, err := service.Repo.UpdatePaymentWithPSP(ctx, createdPayment.ID, pspResponse.ID, pspResponse.Status)
+	if err != nil {
+		return dtos.PaymentOutput{}, err
+	}
+
+	return updatedPayment, nil
 }
