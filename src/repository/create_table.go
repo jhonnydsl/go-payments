@@ -57,5 +57,21 @@ func (r *TableRepository) CreateTablePaymentMethods() error {
 	);`
 
 	_, err := DB.Exec(query)
+	if err != nil {
+		return err
+	}
+
+	insertQuery := `
+	INSERT INTO payment_methods (name, description)
+	SELECT * FROM (VALUES
+	('Credit Card', 'Payment made using a credit card'),
+	('Pix', 'Instant payment method used in Brazil'),
+	('PayPal', 'Online payment service')
+	) AS v(name, description)
+	WHERE NOT EXISTS (
+	SELECT 1 FROM payment_methods WHERE payment_methods.name = v.name
+	);`
+
+	_, err = DB.Exec(insertQuery)
 	return err
 }
