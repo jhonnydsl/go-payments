@@ -22,7 +22,7 @@ func (service *PaymentService) CreatePayment(ctx context.Context, payment dtos.P
 		return dtos.PaymentOutput{}, err
 	}
 
-	pspResponse, err := utils.CreateStripePayment(ctx, int(payment.Amount*100), payment.Currency, "card")	// <= Just "card" for testing purposes.
+	pspResponse, err := utils.CreateStripePayment(ctx, int(payment.Amount), payment.Currency, "card")	// <= Just "card" for testing purposes.
 	if err != nil {
 		return dtos.PaymentOutput{}, err
 	}

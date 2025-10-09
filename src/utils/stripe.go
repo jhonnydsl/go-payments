@@ -2,44 +2,34 @@ package utils
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"net/http"
 	"os"
-	"strings"
 
 	"github.com/jhonnydsl/payment-API/src/dtos"
+	"github.com/stripe/stripe-go/v76"
+	"github.com/stripe/stripe-go/v76/paymentintent"
 )
 
 func CreateStripePayment(ctx context.Context, amount int, currency, paymentMethod string) (*dtos.PSPPaymentResponse, error) {
-	secretKey := os.Getenv("STRIPE_SECRET_KEY")
-	url := "https://api.stripe.com/v1/payment_intents"
+	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
+	
+	params := &stripe.PaymentIntentParams{
+		Amount: stripe.Int64(int64(amount * 100)),
+		Currency: stripe.String(currency),
+		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
+		PaymentMethod: stripe.String("pm_card_visa"),	// <= just testing
+		Confirm: stripe.Bool(true),
+	}
 
-	// Builds the data string in the format required by Stripe, inserting values dynamically
-	data := fmt.Sprintf(
-		"amount=%d&currency=%s&payment_method_types[]=%s",
-		amount, currency, paymentMethod,
-	)
-
-	req, err := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(data))
+	intent, err := paymentintent.New(params)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Add("Authorization", "Bearer " + secretKey)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var result dtos.PSPPaymentResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
+	response := &dtos.PSPPaymentResponse{
+		ID: intent.ID,
+		Status: string(intent.Status),
+		Amount: int(intent.Amount / 100),
 	}
 
-	return &result, nil
+	return response, nil
 }

@@ -27,4 +27,5 @@ type PSPPaymentRequest struct {
 type PSPPaymentResponse struct {
 	ID string `json:"id"`
 	Status string `json:"status"`
+	Amount int `json:"amount"`
 }
