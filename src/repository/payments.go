@@ -60,3 +60,39 @@ func (r *PaymentsRepository) UpdatePaymentWithPSP(ctx context.Context, paymentID
 
 	return updatedPayment, nil
 }
+
+func (r *PaymentsRepository) GetAllPayments(ctx context.Context, userID int) ([]dtos.PaymentOutput, error) {
+	query := `SELECT id, amount, currency, payment_method_id, status, created_at, updated_at FROM payments WHERE user_id = $1`
+	var list []dtos.PaymentOutput
+
+	rows, err := DB.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var output dtos.PaymentOutput
+
+		err = rows.Scan(
+			&output.ID, 
+			&output.Amount, 
+			&output.Currency, 
+			&output.PaymentMethodID, 
+			&output.Status, 
+			&output.CreatedAt, 
+			&output.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		list = append(list, output)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
