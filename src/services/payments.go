@@ -34,3 +34,7 @@ func (service *PaymentService) CreatePayment(ctx context.Context, payment dtos.P
 
 	return updatedPayment, nil
 }
+
+func (service *PaymentService) GetAllPayments(ctx context.Context, userID int) ([]dtos.PaymentOutput, error) {
+	return service.Repo.GetAllPayments(ctx, userID)
+}
