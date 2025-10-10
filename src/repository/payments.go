@@ -62,7 +62,7 @@ func (r *PaymentsRepository) UpdatePaymentWithPSP(ctx context.Context, paymentID
 }
 
 func (r *PaymentsRepository) GetAllPayments(ctx context.Context, userID int) ([]dtos.PaymentOutput, error) {
-	query := `SELECT id, amount, currency, payment_method_id, status, created_at, updated_at FROM payments WHERE user_id = $1`
+	query := `SELECT id, user_id, amount, currency, payment_method_id, status, created_at, updated_at FROM payments WHERE user_id = $1`
 	var list []dtos.PaymentOutput
 
 	rows, err := DB.Query(query, userID)
@@ -75,7 +75,8 @@ func (r *PaymentsRepository) GetAllPayments(ctx context.Context, userID int) ([]
 		var output dtos.PaymentOutput
 
 		err = rows.Scan(
-			&output.ID, 
+			&output.ID,
+			&output.UserID,
 			&output.Amount, 
 			&output.Currency, 
 			&output.PaymentMethodID, 
