@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 
 	"github.com/jhonnydsl/payment-API/src/dtos"
 )
@@ -96,4 +98,33 @@ func (r *PaymentsRepository) GetAllPayments(ctx context.Context, userID int) ([]
 	}
 
 	return list, nil
+}
+
+func (r *PaymentsRepository) GetPaymentByID(ctx context.Context, userID, paymentID int) (dtos.PaymentOutput, error) {
+	query := `
+	SELECT id, user_id, amount, currency, payment_method_id, status, created_at, updated_at 
+	FROM payments 
+	WHERE user_id = $1 AND id = $2
+	`
+	var payment dtos.PaymentOutput
+
+	err := DB.QueryRow(query, userID, paymentID).Scan(
+		&payment.ID,
+		&payment.UserID,
+		&payment.Amount,
+		&payment.Currency,
+		&payment.PaymentMethodID,
+		&payment.Status,
+		&payment.CreatedAt,
+		&payment.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {		// <= checking error if payment does not exist
+			return dtos.PaymentOutput{}, nil
+		}
+		return dtos.PaymentOutput{}, err
+	}
+
+
+	return payment, nil
 }

@@ -16,5 +16,6 @@ func SetupRoutes(r chi.Router, userController *controllers.UserController, payme
 		protected.Use(middleware.AuthMiddleware)
 		protected.Post("/payments", paymentController.CreatePayment)
 		protected.Get("/payments", paymentController.GetAllPayments)
+		protected.Get("/payments/{paymentID}", paymentController.GetPaymentByID)
 	})
 }

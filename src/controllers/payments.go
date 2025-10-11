@@ -64,3 +64,31 @@ func (controller *PaymentController) GetAllPayments(w http.ResponseWriter, r *ht
 
 	utils.SendJSON(w, paymentsList, http.StatusOK)
 }
+
+func (controller *PaymentController) GetPaymentByID(w http.ResponseWriter, r *http.Request) {
+	if !utils.ValidateMethod(w, r, "GET") {
+		return
+	}
+
+	ctx, cancel := utils.NewDBContext()
+	defer cancel()
+
+	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+	if !ok {
+		http.Error(w, "unauthorizad", http.StatusUnauthorized)
+		return
+	}
+
+	paymentID, ok := utils.GetIDParam(w, r, "paymentID")
+	if !ok {
+		return
+	}
+
+	payment, err := controller.Service.GetPaymentByID(ctx, userID, paymentID)
+	if err != nil {
+		http.Error(w, "error listing payment", http.StatusInternalServerError)
+		return
+	}
+
+	utils.SendJSON(w, payment, http.StatusOK)
+}
