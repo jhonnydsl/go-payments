@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/jhonnydsl/payment-API/src/dtos"
@@ -16,13 +17,11 @@ func CreateStripePayment(ctx context.Context, amount int, currency, paymentMetho
 		Amount: stripe.Int64(int64(amount * 100)),
 		Currency: stripe.String(currency),
 		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
-		PaymentMethod: stripe.String("pm_card_visa"),	// <= just testing
-		Confirm: stripe.Bool(true),
 	}
 
 	intent, err := paymentintent.New(params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("stripe create payment error: %w", err)
 	}
 
 	response := &dtos.PSPPaymentResponse{
@@ -32,4 +31,14 @@ func CreateStripePayment(ctx context.Context, amount int, currency, paymentMetho
 	}
 
 	return response, nil
+}
+
+func DeleteStripePayment(pspID string) error {
+	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
+	_, err := paymentintent.Cancel(pspID, nil)
+	if err != nil {
+		return fmt.Errorf("failed to delete payment on Stripe: %w", err)
+	}
+
+	return nil
 }

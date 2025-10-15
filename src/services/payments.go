@@ -42,3 +42,17 @@ func (service *PaymentService) GetAllPayments(ctx context.Context, userID int) (
 func (service *PaymentService) GetPaymentByID(ctx context.Context, userID, paymentID int) (dtos.PaymentOutput, error) {
 	return service.Repo.GetPaymentByID(ctx, userID, paymentID)
 }
+
+func (service *PaymentService) DeletePayment(ctx context.Context, userID, paymentID int) error {
+	payment, err := service.Repo.GetPaymentByID(ctx, userID, paymentID)
+	if err != nil {
+		return err
+	}
+
+	err = utils.DeleteStripePayment(payment.PspID.String)
+	if err != nil {
+		return err
+	}
+
+	return service.Repo.DeletePayment(ctx, userID, paymentID)
+}

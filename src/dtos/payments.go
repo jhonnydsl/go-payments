@@ -1,6 +1,9 @@
 package dtos
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type PaymentInput struct {
 	Amount        float64 `json:"amount"`
@@ -11,6 +14,7 @@ type PaymentInput struct {
 type PaymentOutput struct {
 	ID            int     `json:"id"`
 	UserID        int     `json:"user_id"`
+	PspID		  sql.NullString     `json:"psp_id"`
 	Amount        float64 `json:"amount"`
 	Currency      string  `json:"currency"`
 	PaymentMethodID int  `json:"payment_method_id"`

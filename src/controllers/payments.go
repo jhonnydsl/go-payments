@@ -92,3 +92,31 @@ func (controller *PaymentController) GetPaymentByID(w http.ResponseWriter, r *ht
 
 	utils.SendJSON(w, payment, http.StatusOK)
 }
+
+func (controller *PaymentController) DeletePayment(w http.ResponseWriter, r *http.Request) {
+	if !utils.ValidateMethod(w, r, "DELETE") {
+		return
+	}
+
+	ctx, cancel := utils.NewDBContext()
+	defer cancel()
+
+	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+	if !ok {
+		http.Error(w, "unaothorized", http.StatusUnauthorized)
+		return
+	}
+
+	paymentID, ok := utils.GetIDParam(w, r, "paymentID")
+	if !ok {
+		return
+	}
+
+	err := controller.Service.DeletePayment(ctx, userID, paymentID)
+	if err != nil {
+		http.Error(w, "error deleting payment", http.StatusInternalServerError)
+		return
+	}
+
+	utils.SendJSON(w, map[string]string{"message": "payment deleted"}, http.StatusOK)
+}

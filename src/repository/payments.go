@@ -14,13 +14,14 @@ func (r *PaymentsRepository) CreatePayment(ctx context.Context, payment dtos.Pay
 	query := `
 	INSERT INTO payments (user_id, amount, currency, payment_method_id, status)
 	VALUES ($1, $2, $3, $4, $5)
-	RETURNING id, user_id, amount, currency, payment_method_id, status, created_at, updated_at;
+	RETURNING id, psp_id, user_id, amount, currency, payment_method_id, status, created_at, updated_at;
 	`
 	var createdPayment dtos.PaymentOutput
 
 
 	err := DB.QueryRowContext(ctx, query, userID, payment.Amount, payment.Currency, payment.PaymentMethodID, "pending").Scan(
 		&createdPayment.ID,
+		&createdPayment.PspID,
 		&createdPayment.UserID,
 		&createdPayment.Amount,
 		&createdPayment.Currency,
@@ -41,13 +42,14 @@ func (r *PaymentsRepository) UpdatePaymentWithPSP(ctx context.Context, paymentID
 	UPDATE payments
 	SET psp_id = $1, status = $2, updated_at = CURRENT_TIMESTAMP
 	WHERE id = $3
-	RETURNING id, user_id, amount, currency, payment_method_id, status, created_at, updated_at;
+	RETURNING id, psp_id, user_id, amount, currency, payment_method_id, status, created_at, updated_at;
 	`
 
 	var updatedPayment dtos.PaymentOutput
 
 	err := DB.QueryRowContext(ctx, query, pspID, status, paymentID).Scan(
 		&updatedPayment.ID,
+		&updatedPayment.PspID,
 		&updatedPayment.UserID,
 		&updatedPayment.Amount,
 		&updatedPayment.Currency,
@@ -64,7 +66,7 @@ func (r *PaymentsRepository) UpdatePaymentWithPSP(ctx context.Context, paymentID
 }
 
 func (r *PaymentsRepository) GetAllPayments(ctx context.Context, userID int) ([]dtos.PaymentOutput, error) {
-	query := `SELECT id, user_id, amount, currency, payment_method_id, status, created_at, updated_at FROM payments WHERE user_id = $1`
+	query := `SELECT id, COALESCE(psp_id, ''), user_id, amount, currency, payment_method_id, status, created_at, updated_at FROM payments WHERE user_id = $1`
 	var list []dtos.PaymentOutput
 
 	rows, err := DB.Query(query, userID)
@@ -78,6 +80,7 @@ func (r *PaymentsRepository) GetAllPayments(ctx context.Context, userID int) ([]
 
 		err = rows.Scan(
 			&output.ID,
+			&output.PspID,
 			&output.UserID,
 			&output.Amount, 
 			&output.Currency, 
@@ -102,7 +105,7 @@ func (r *PaymentsRepository) GetAllPayments(ctx context.Context, userID int) ([]
 
 func (r *PaymentsRepository) GetPaymentByID(ctx context.Context, userID, paymentID int) (dtos.PaymentOutput, error) {
 	query := `
-	SELECT id, user_id, amount, currency, payment_method_id, status, created_at, updated_at 
+	SELECT id, COALESCE(psp_id, ''), user_id, amount, currency, payment_method_id, status, created_at, updated_at 
 	FROM payments 
 	WHERE user_id = $1 AND id = $2
 	`
@@ -110,6 +113,7 @@ func (r *PaymentsRepository) GetPaymentByID(ctx context.Context, userID, payment
 
 	err := DB.QueryRow(query, userID, paymentID).Scan(
 		&payment.ID,
+		&payment.PspID,
 		&payment.UserID,
 		&payment.Amount,
 		&payment.Currency,
@@ -127,4 +131,26 @@ func (r *PaymentsRepository) GetPaymentByID(ctx context.Context, userID, payment
 
 
 	return payment, nil
+}
+
+func (r *PaymentsRepository) DeletePayment(ctx context.Context, userID, paymentID int) error {
+	query := `
+	DELETE FROM payments WHERE id = $1 AND user_id = $2
+	`
+
+	res, err := DB.Exec(query, paymentID, userID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("no payments found to delete")
+	}
+
+	return nil
 }
