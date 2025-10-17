@@ -12,27 +12,81 @@ type PaymentService struct {
 	Repo *repository.PaymentsRepository
 }
 
-func (service *PaymentService) CreatePayment(ctx context.Context, payment dtos.PaymentInput, userID int) (dtos.PaymentOutput, error) {
+func (service *PaymentService) CreatePayment(ctx context.Context, payment dtos.PaymentInput, userID int) (dtos.ConfirmResponse, error) {
+	if err := utils.ValidatePaymentInput(payment); err != nil {
+		return dtos.ConfirmResponse{}, err
+	}
+
+	isDuplicate, exiting, err := service.CheckDuplicatePayment(ctx, payment, userID)
+	if err != nil {
+		return dtos.ConfirmResponse{}, err
+	}
+
+	if isDuplicate {
+		return dtos.ConfirmResponse{
+			Payment: exiting,
+			RequiresConfirmation: true,
+			Message: "Similar payment found. Do you want to confirm creation?",
+		}, nil
+	}
+	
+	createdPayment, err := service.Repo.CreatePayment(ctx, payment, userID)
+	if err != nil {
+		return dtos.ConfirmResponse{}, err
+	}
+
+	pspResponse, err := utils.CreateStripePayment(ctx, int(payment.Amount), payment.Currency, "card")	// <= Just "card" for testing purposes.
+	if err != nil {
+		return dtos.ConfirmResponse{}, err
+	}
+
+	updatedPayment, err := service.Repo.UpdatePaymentWithPSP(ctx, createdPayment.ID, pspResponse.ID, pspResponse.Status)
+	if err != nil {
+		return dtos.ConfirmResponse{}, err
+	}
+
+	return dtos.ConfirmResponse{
+		Payment: updatedPayment,
+		RequiresConfirmation: false,
+	}, nil
+}
+
+func (service *PaymentService) CheckDuplicatePayment(ctx context.Context, input dtos.PaymentInput, userID int) (bool, dtos.PaymentOutput, error) {
+	similar := dtos.SimilarPayment {
+		UserID: userID,
+		Amount: input.Amount,
+		PaymentMethodID: input.PaymentMethodID,
+		Status: "pending",
+	}
+
+	existing, err := service.Repo.FindSimilarPayment(ctx, similar)
+	if err != nil {
+		return false, dtos.PaymentOutput{}, err
+	}
+
+	if existing.ID != 0 {
+		return true, existing, nil
+	}
+
+	return false, dtos.PaymentOutput{}, nil
+}
+
+func (service *PaymentService) ForceCreatePayment(ctx context.Context, payment dtos.PaymentInput, userID int) (dtos.PaymentOutput, error) {
 	if err := utils.ValidatePaymentInput(payment); err != nil {
 		return dtos.PaymentOutput{}, err
 	}
-	
+
 	createdPayment, err := service.Repo.CreatePayment(ctx, payment, userID)
 	if err != nil {
 		return dtos.PaymentOutput{}, err
 	}
 
-	pspResponse, err := utils.CreateStripePayment(ctx, int(payment.Amount), payment.Currency, "card")	// <= Just "card" for testing purposes.
+	pspResponse, err := utils.CreateStripePayment(ctx, int(payment.Amount), payment.Currency, "card")
 	if err != nil {
 		return dtos.PaymentOutput{}, err
 	}
 
-	updatedPayment, err := service.Repo.UpdatePaymentWithPSP(ctx, createdPayment.ID, pspResponse.ID, pspResponse.Status)
-	if err != nil {
-		return dtos.PaymentOutput{}, err
-	}
-
-	return updatedPayment, nil
+	return service.Repo.UpdatePaymentWithPSP(ctx, createdPayment.ID, pspResponse.ID, pspResponse.Status)
 }
 
 func (service *PaymentService) GetAllPayments(ctx context.Context, userID int) ([]dtos.PaymentOutput, error) {

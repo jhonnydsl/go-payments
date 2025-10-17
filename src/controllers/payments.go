@@ -33,13 +33,47 @@ func (controller *PaymentController) CreatePayment(w http.ResponseWriter, r *htt
 		return
 	}
 
-	newPayment, err := controller.Service.CreatePayment(ctx, paymentInput, userID)
+	response, err := controller.Service.CreatePayment(ctx, paymentInput, userID)
 	if err != nil {
-		http.Error(w, "error creating payment", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	utils.SendJSON(w, newPayment, http.StatusCreated)
+	if response.RequiresConfirmation {
+		utils.SendJSON(w, response, http.StatusAccepted)
+		return
+	}
+
+	utils.SendJSON(w, response, http.StatusCreated)
+}
+
+func (controller *PaymentController) ConfirmPayment(w http.ResponseWriter, r *http.Request) {
+	if !utils.ValidateMethod(w, r, "POST") {
+		return
+	}
+
+	ctx, cancel := utils.NewDBContext()
+	defer cancel()
+
+	var paymentInput dtos.PaymentInput
+
+	if !utils.DecodeJSON(w, r, &paymentInput) {
+		return
+	}
+
+	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	response, err := controller.Service.ForceCreatePayment(ctx, paymentInput, userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	utils.SendJSON(w, response, http.StatusCreated)
 }
 
 func (controller *PaymentController) GetAllPayments(w http.ResponseWriter, r *http.Request) {

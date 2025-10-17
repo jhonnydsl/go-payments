@@ -154,3 +154,33 @@ func (r *PaymentsRepository) DeletePayment(ctx context.Context, userID, paymentI
 
 	return nil
 }
+
+func (r *PaymentsRepository) FindSimilarPayment(ctx context.Context, similar dtos.SimilarPayment) (dtos.PaymentOutput, error) {
+	query := `
+	SELECT id, COALESCE(psp_id, ''), user_id, amount, currency, payment_method_id, status, created_at, updated_at
+	FROM payments
+	WHERE user_id = $1 AND amount = $2 AND payment_method_id = $3 AND status = $4
+	LIMIT 1
+	`
+	var payment dtos.PaymentOutput
+
+	err := DB.QueryRowContext(ctx, query, similar.UserID, similar.Amount, similar.PaymentMethodID, similar.Status).Scan(
+		&payment.ID,
+		&payment.PspID,
+		&payment.UserID,
+		&payment.Amount,
+		&payment.Currency,
+		&payment.PaymentMethodID,
+		&payment.Status,
+		&payment.CreatedAt,
+		&payment.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return dtos.PaymentOutput{}, nil
+		}
+		return dtos.PaymentOutput{}, err
+	}
+
+	return payment, nil
+}
